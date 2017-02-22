@@ -97,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
         private int mFilterPos = 0;
         private boolean isForward;
         private Bitmap mCurrentBitmap;
+        private Bitmap mForApply;
 
         private class GestureListener extends GestureDetector.SimpleOnGestureListener {
 
@@ -112,11 +113,11 @@ public class MainActivity extends AppCompatActivity {
                 if (Math.abs(distanceX) > Math.abs(distanceY) && Math.abs(distanceX) >
                         SWIPE_DISTANCE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                     if (distanceX > 0) {
-
-                        moveRight();
-                    } else {
-
+//swipe right
                         moveLeft();
+                    } else {
+                        moveRight();
+
                     }
                     return true;
                 }
@@ -125,19 +126,22 @@ public class MainActivity extends AppCompatActivity {
             }
 
             private void moveRight() {
-                isForward = false;
+                isForward = true;
                 if (mFilterPos > 0) {
+
+                    mCurrentBitmap = mFilters.get(mFilterPos);
                     mFilterPos--;
-                    // currX = getMeasuredWidth();
+                    mForApply = mFilters.get(mFilterPos);
+                    // currX = getWidth();
                     // invalidate();
 
 
                     ValueAnimator va = ValueAnimator.ofInt(getMeasuredWidth(), 0);
-                    va.setDuration(4000);
+                    va.setDuration(200);
                     va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                         public void onAnimationUpdate(ValueAnimator animation) {
                             isForward = true;
-                            currX = (Integer) animation.getAnimatedValue();
+                            currX = (int) animation.getAnimatedValue();
                             invalidate();
 
                         }
@@ -151,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            mCurrentBitmap = mFilters.get(mFilterPos);
+
                         }
 
                         @Override
@@ -170,16 +174,18 @@ public class MainActivity extends AppCompatActivity {
             }
 
             private void moveLeft() {
-                isForward = true;
+                isForward = false;
                 if (mFilterPos < mFilters.size() - 1) {
+                    mCurrentBitmap = mFilters.get(mFilterPos);
                     mFilterPos++;
+                    mForApply = mFilters.get(mFilterPos);
 
 
-                    ValueAnimator va = ValueAnimator.ofInt(getMeasuredWidth(), 0);
-                    va.setDuration(4000);
+                    ValueAnimator va = ValueAnimator.ofInt(0, getMeasuredWidth());
+                    va.setDuration(200);
                     va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                         public void onAnimationUpdate(ValueAnimator animation) {
-                            currX = (Integer) animation.getAnimatedValue();
+                            currX = (int) animation.getAnimatedValue();
                             invalidate();
 
                         }
@@ -192,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            mCurrentBitmap = mFilters.get(mFilterPos);
+
                         }
 
                         @Override
@@ -242,14 +248,14 @@ public class MainActivity extends AppCompatActivity {
             canvas.save();
             // Rect rectOrigin = new Rect(0, 0,getMeasuredWidth(),0);
 
-
-            canvas.drawBitmap(mCurrentBitmap, 0, 0, paint0);
+            Rect rec = new Rect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            canvas.drawBitmap(mCurrentBitmap, rec, rec, paint0);
 
             // canvas.drawBitmap(mOriginal, null,rectOrigin, paint0);
             Rect rectSrc = null;
             Rect rectDest = null;
 
-            if (isForward) {
+            if (!isForward) {
 
                 rectSrc = new Rect(0, 0, currX, getMeasuredHeight());
                 rectDest = new Rect(0, 0, currX, getMeasuredHeight());
@@ -258,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
                 rectDest = new Rect(currX, 0, getMeasuredWidth(), getMeasuredHeight());
             }
 
-            canvas.drawBitmap(mFilters.get(mFilterPos), rectSrc, rectDest, paint1);
+            canvas.drawBitmap(mForApply, rectSrc, rectDest, paint1);
 
 
             canvas.restore();
@@ -316,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
 
             });
 
-            mCurrentBitmap = mFilters.get(mFilterPos);
+            mForApply =  mCurrentBitmap = mFilters.get(mFilterPos);
 
 
         }
