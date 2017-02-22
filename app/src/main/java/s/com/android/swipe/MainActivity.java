@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private CanvasView canvasView;
 
     List<Bitmap> mFilters = new ArrayList<>();
-    Bitmap mOriginal;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
         Bitmap bitmapSource = BitmapFactory.decodeResource(getResources(), R.drawable.cat_puzzle3);
         Matrix matrix = new Matrix();
         matrix.postScale(2f,2f);
-        mOriginal = Bitmap.createBitmap(bitmapSource, 0, 0, bitmapSource.getWidth(), bitmapSource.getHeight(), matrix, true);
+        Bitmap mOriginal = Bitmap.createBitmap(bitmapSource, 0, 0, bitmapSource.getWidth(), bitmapSource.getHeight(), matrix, true);
+
 
 
 
@@ -85,18 +86,16 @@ public class MainActivity extends AppCompatActivity {
 
         Bitmap filter2 = mGPUImage.getBitmapWithFilterApplied();
 
+        mFilters.add(mOriginal);
         mFilters.add(filter2);
 
-        canvasView.init(mFilters, mOriginal);
+        canvasView.init(mFilters, 1);
 
       //  holder.addView(imageView);
         holder.addView(canvasView);
 
         //setContentView(new CanvasView(this));
     }
-
-
-
 
 
     class CanvasView extends ViewGroup  {
@@ -118,36 +117,39 @@ public class MainActivity extends AppCompatActivity {
                 if (Math.abs(distanceX) > Math.abs(distanceY) && Math.abs(distanceX) >
                         SWIPE_DISTANCE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                     if (distanceX > 0) {
-                        // start left increment
+
                         isLeftActive = false;
-
-
-                        if (e2.getAction() == MotionEvent.ACTION_DOWN) {
-
-                        } else {
-
-                            currX = getMeasuredWidth();
-                            invalidate();
-                            mFilterPos = 1;
-                        }
+                        moveRight();
 
                     } else {
 
                         isLeftActive = true;
-                        currX = 0;
-                        invalidate();
+                        moveLeft();
+
                     }
-                }
-                if (e2.getAction() == MotionEvent.ACTION_DOWN) {
-
-                }
-
-                if (e2.getAction() == MotionEvent.ACTION_UP) {
-                    isLeftActive = false;
-
+                    return true;
                 }
 
                 return false;
+            }
+
+            private void moveRight() {
+
+                if(mFilterPos>0) {
+                    mFilterPos--;
+                    currX = getMeasuredWidth();
+                    invalidate();
+                }
+
+            }
+
+            private void moveLeft() {
+
+                if(mFilterPos < mFilters.size()-1) {
+                    mFilterPos++;
+                    currX = getMeasuredWidth();
+                    invalidate();
+                }
             }
 
             @Override
@@ -157,13 +159,15 @@ public class MainActivity extends AppCompatActivity {
                     if (Math.abs(distanceX1) > Math.abs(distanceY)) {
 
                        // if (isLeftActive) {
-                            currX = (int) e2.getX();
-                            invalidate();
+                           // currX = (int) e2.getX();
+                           // invalidate();
                       //  }
                     }
                 }
                     return false;
             }
+
+
         }
 
 
@@ -171,7 +175,6 @@ public class MainActivity extends AppCompatActivity {
         Paint paint0;
         Paint paint1;
         private List<Bitmap> mFilters;
-        private Bitmap mOriginal;
 
         public CanvasView(Context context) {
             super(context);
@@ -179,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
             paint1 = new Paint();
 
             paint0.setAlpha(255);
-            paint1.setAlpha(128);
+            paint1.setAlpha(255);
 
             paint1.setAntiAlias(true);
             paint1.setFlags(Paint.ANTI_ALIAS_FLAG);
@@ -197,7 +200,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onDraw(Canvas canvas) {
 
-            if(mOriginal!=null)
             drawFilter(canvas,currX);
         }
 
@@ -206,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
             canvas.save();
            // Rect rectOrigin = new Rect(0, 0,getMeasuredWidth(),0);
-            canvas.drawBitmap(mOriginal, 0, 0, paint0);
+            canvas.drawBitmap(mFilters.get(mFilterPos), 0, 0, paint0);
            // canvas.drawBitmap(mOriginal, null,rectOrigin, paint0);
             Rect rectSrc = new Rect(0, 0, currX, getMeasuredHeight());
             Rect rectDest = new Rect(0, 0, currX, getMeasuredHeight());
@@ -215,10 +217,10 @@ public class MainActivity extends AppCompatActivity {
             canvas.restore();
         }
 
-        public void init(@NonNull List<Bitmap> filters, @NonNull Bitmap original) {
+        public void init(@NonNull List<Bitmap> filters, int posToShow) {
+            mFilterPos = posToShow;
 
             this.mFilters = filters;
-            this.mOriginal = original;
 
             final GestureDetector gdt = new GestureDetector(new GestureListener());
             this.setOnTouchListener(new View.OnTouchListener() {
