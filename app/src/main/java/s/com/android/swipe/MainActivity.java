@@ -1,5 +1,7 @@
 package s.com.android.swipe;
 
+import android.animation.Animator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -38,7 +40,7 @@ import static android.R.attr.bitmap;
 public class MainActivity extends AppCompatActivity {
 
     private GPUImage mGPUImage;
-//    ImageView imageView;
+    //    ImageView imageView;
     private CanvasView canvasView;
 
     List<Bitmap> mFilters = new ArrayList<>();
@@ -52,24 +54,15 @@ public class MainActivity extends AppCompatActivity {
         RelativeLayout holder = (RelativeLayout) findViewById(R.id.activity_main);
 
 
-
-
-
-
-
 //        imageView = new ImageView(getBaseContext());
         canvasView = new CanvasView(this);
         canvasView.setBackgroundColor(456578);
 
 
-
-
         Bitmap bitmapSource = BitmapFactory.decodeResource(getResources(), R.drawable.cat_puzzle3);
         Matrix matrix = new Matrix();
-        matrix.postScale(2f,2f);
+        matrix.postScale(2f, 2f);
         Bitmap mOriginal = Bitmap.createBitmap(bitmapSource, 0, 0, bitmapSource.getWidth(), bitmapSource.getHeight(), matrix, true);
-
-
 
 
         mGPUImage = new GPUImage(getBaseContext());
@@ -91,23 +84,25 @@ public class MainActivity extends AppCompatActivity {
 
         canvasView.init(mFilters, 1);
 
-      //  holder.addView(imageView);
+        //  holder.addView(imageView);
         holder.addView(canvasView);
 
         //setContentView(new CanvasView(this));
     }
 
 
-    class CanvasView extends ViewGroup  {
+    class CanvasView extends ViewGroup {
 
 
         private int mFilterPos = 0;
+        private boolean isForward;
+        private Bitmap mCurrentBitmap;
 
         private class GestureListener extends GestureDetector.SimpleOnGestureListener {
 
             private static final int SWIPE_DISTANCE_THRESHOLD = 25;
             private static final int SWIPE_VELOCITY_THRESHOLD = 5;
-            boolean isLeftActive = false;
+
 
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
@@ -118,14 +113,10 @@ public class MainActivity extends AppCompatActivity {
                         SWIPE_DISTANCE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                     if (distanceX > 0) {
 
-                        isLeftActive = false;
                         moveRight();
-
                     } else {
 
-                        isLeftActive = true;
                         moveLeft();
-
                     }
                     return true;
                 }
@@ -134,23 +125,97 @@ public class MainActivity extends AppCompatActivity {
             }
 
             private void moveRight() {
-
-                if(mFilterPos>0) {
+                isForward = false;
+                if (mFilterPos > 0) {
                     mFilterPos--;
-                    currX = getMeasuredWidth();
-                    invalidate();
+                    // currX = getMeasuredWidth();
+                    // invalidate();
+
+
+                    ValueAnimator va = ValueAnimator.ofInt(getMeasuredWidth(), 0);
+                    va.setDuration(4000);
+                    va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        public void onAnimationUpdate(ValueAnimator animation) {
+                            isForward = true;
+                            currX = (Integer) animation.getAnimatedValue();
+                            invalidate();
+
+                        }
+                    });
+
+                    va.addListener(new Animator.AnimatorListener() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            mCurrentBitmap = mFilters.get(mFilterPos);
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animator animation) {
+
+                        }
+                    });
+                    va.start();
                 }
 
             }
 
             private void moveLeft() {
-
-                if(mFilterPos < mFilters.size()-1) {
+                isForward = true;
+                if (mFilterPos < mFilters.size() - 1) {
                     mFilterPos++;
-                    currX = getMeasuredWidth();
-                    invalidate();
+
+
+                    ValueAnimator va = ValueAnimator.ofInt(getMeasuredWidth(), 0);
+                    va.setDuration(4000);
+                    va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        public void onAnimationUpdate(ValueAnimator animation) {
+                            currX = (Integer) animation.getAnimatedValue();
+                            invalidate();
+
+                        }
+                    });
+                    va.addListener(new Animator.AnimatorListener() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            mCurrentBitmap = mFilters.get(mFilterPos);
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animator animation) {
+
+                        }
+                    });
+                    va.start();
+
+
+                    // currX = getMeasuredWidth();
+                    //  invalidate();
                 }
             }
+
+
+
+
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX1, float distanceY) {
@@ -158,16 +223,45 @@ public class MainActivity extends AppCompatActivity {
                 if (Math.abs(distanceY) > 2 || Math.abs(distanceX1) > 2) {
                     if (Math.abs(distanceX1) > Math.abs(distanceY)) {
 
-                       // if (isLeftActive) {
-                           // currX = (int) e2.getX();
-                           // invalidate();
-                      //  }
+                        // if (isLeftActive) {
+                        // currX = (int) e2.getX();
+                        // invalidate();
+                        //  }
                     }
                 }
-                    return false;
+                return false;
             }
 
 
+        }
+
+
+        private void drawFilter(Canvas canvas) {
+
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            canvas.save();
+            // Rect rectOrigin = new Rect(0, 0,getMeasuredWidth(),0);
+
+
+            canvas.drawBitmap(mCurrentBitmap, 0, 0, paint0);
+
+            // canvas.drawBitmap(mOriginal, null,rectOrigin, paint0);
+            Rect rectSrc = null;
+            Rect rectDest = null;
+
+            if (isForward) {
+
+                rectSrc = new Rect(0, 0, currX, getMeasuredHeight());
+                rectDest = new Rect(0, 0, currX, getMeasuredHeight());
+            } else {
+                rectSrc = new Rect(currX, 0, getMeasuredWidth(), getMeasuredHeight());
+                rectDest = new Rect(currX, 0, getMeasuredWidth(), getMeasuredHeight());
+            }
+
+            canvas.drawBitmap(mFilters.get(mFilterPos), rectSrc, rectDest, paint1);
+
+
+            canvas.restore();
         }
 
 
@@ -200,22 +294,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onDraw(Canvas canvas) {
 
-            drawFilter(canvas,currX);
+            drawFilter(canvas);
         }
 
-        private void drawFilter(Canvas canvas, int currX) {
 
-            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-            canvas.save();
-           // Rect rectOrigin = new Rect(0, 0,getMeasuredWidth(),0);
-            canvas.drawBitmap(mFilters.get(mFilterPos), 0, 0, paint0);
-           // canvas.drawBitmap(mOriginal, null,rectOrigin, paint0);
-            Rect rectSrc = new Rect(0, 0, currX, getMeasuredHeight());
-            Rect rectDest = new Rect(0, 0, currX, getMeasuredHeight());
-
-            canvas.drawBitmap(mFilters.get(mFilterPos), rectSrc, rectDest, paint1);
-            canvas.restore();
-        }
 
         public void init(@NonNull List<Bitmap> filters, int posToShow) {
             mFilterPos = posToShow;
@@ -233,6 +315,8 @@ public class MainActivity extends AppCompatActivity {
 
 
             });
+
+            mCurrentBitmap = mFilters.get(mFilterPos);
 
 
         }
